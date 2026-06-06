@@ -5,7 +5,8 @@ import { AmbientSounds } from './components/AmbientSounds';
 import { Stats } from './components/Stats';
 import { useTimer, useStats } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
-import { TimerMode, Settings, DEFAULT_SETTINGS, SoundType } from './types';
+import { useNasaAudio } from './hooks/useNasaAudio';
+import { TimerMode, Settings, DEFAULT_SETTINGS, SoundType, NasaSoundId } from './types';
 
 type Tab = 'tasks' | 'sounds' | 'stats';
 
@@ -25,6 +26,7 @@ export default function App() {
   const timer = useTimer(settings);
   const { stats, refresh, recordTaskDone } = useStats();
   const audio = useAudio();
+  const nasa = useNasaAudio();
 
   // request notification permission on first interaction
   useEffect(() => {
@@ -62,8 +64,23 @@ export default function App() {
 
   const handleSoundPlay = useCallback((type: SoundType) => {
     audio.play(type);
-    if (type !== 'none') showNotif(`♪ ${type} サウンド開始`);
-  }, [audio, showNotif]);
+  }, [audio]);
+
+  const handleNasaPlay = useCallback((id: NasaSoundId) => {
+    const labels: Record<NasaSoundId, string> = {
+      'mars-wind': '火星の風',
+      'insight': 'InSight 地震計',
+      'saturn': '土星の電波',
+      'jupiter': '木星電磁波',
+      'voyager': '恒星間空間',
+    };
+    nasa.play(id);
+    showNotif(`🚀 ${labels[id]} を読み込んでいます...`);
+  }, [nasa, showNotif]);
+
+  const handleNasaStop = useCallback(() => {
+    nasa.stop();
+  }, [nasa]);
 
   const openSettings = () => {
     setDraft({ ...settings });
@@ -197,7 +214,16 @@ export default function App() {
 
           <div className="panel-content">
             {tab === 'tasks' && <TaskManager onTaskDone={handleTaskDone} />}
-            {tab === 'sounds' && <AmbientSounds onPlay={handleSoundPlay} onVolume={audio.setVolume} />}
+            {tab === 'sounds' && (
+              <AmbientSounds
+                onAmbientPlay={handleSoundPlay}
+                onNasaPlay={handleNasaPlay}
+                onNasaStop={handleNasaStop}
+                onVolume={(v) => { audio.setVolume(v); nasa.setVolume(v); }}
+                nasaActiveId={nasa.activeId}
+                nasaPlayState={nasa.playState}
+              />
+            )}
             {tab === 'stats' && <Stats stats={stats} totalToday={timer.totalToday} />}
           </div>
         </div>

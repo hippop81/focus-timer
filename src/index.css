@@ -757,6 +757,96 @@ html, body {
 
 .settings-save:hover { background: #b59af7; box-shadow: 0 4px 16px var(--accent-glow); }
 
+/* ─── Sound section labels ─── */
+.sound-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+}
+
+.nasa-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.nasa-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  background: rgba(251, 146, 60, 0.15);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  border-radius: 20px;
+  color: #fb923c;
+  text-transform: uppercase;
+}
+
+.nasa-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+.sound-btn.nasa-btn {
+  position: relative;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 8px 10px;
+}
+
+.sound-desc {
+  font-size: 9px;
+  color: var(--text-faint);
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+}
+
+.sound-btn.nasa-active {
+  background: rgba(251, 146, 60, 0.12);
+  border-color: rgba(251, 146, 60, 0.3);
+}
+
+.sound-btn.nasa-active .sound-icon { filter: drop-shadow(0 0 6px rgba(251,146,60,0.5)); }
+.sound-btn.nasa-active .sound-name { color: #fb923c; }
+
+.sound-btn.loading { opacity: 0.7; cursor: wait; }
+
+.nasa-state-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.nasa-state-tag.tag-real {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.nasa-state-tag.tag-sim {
+  background: rgba(157, 127, 244, 0.2);
+  color: var(--accent);
+  border: 1px solid rgba(157, 127, 244, 0.3);
+}
+
+.nasa-state-tag.tag-loading {
+  background: rgba(251, 146, 60, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  animation: pulse 1s ease infinite;
+}
+
 /* ─── Notification ─── */
 .notif {
   position: fixed;
