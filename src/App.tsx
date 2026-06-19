@@ -2,13 +2,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { TimerRing } from './components/Timer';
 import { TaskManager } from './components/TaskManager';
 import { AmbientSounds } from './components/AmbientSounds';
+import { Review } from './components/Review';
 import { Stats } from './components/Stats';
 import { useTimer, useStats } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useNasaAudio } from './hooks/useNasaAudio';
 import { TimerMode, Settings, DEFAULT_SETTINGS, SoundType, NasaSoundId } from './types';
 
-type Tab = 'tasks' | 'sounds' | 'stats';
+type Tab = 'tasks' | 'sounds' | 'review' | 'stats';
 
 function loadSettings(): Settings {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem('focus_settings') || '{}') }; }
@@ -199,6 +200,7 @@ export default function App() {
             {([
               { key: 'tasks',  label: 'タスク',  icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> },
               { key: 'sounds', label: 'サウンド', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg> },
+              { key: 'review', label: '復習',    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> },
               { key: 'stats',  label: '統計',    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
             ] as { key: Tab; label: string; icon: React.ReactNode }[]).map(t => (
               <button
@@ -224,6 +226,7 @@ export default function App() {
                 nasaPlayState={nasa.playState}
               />
             )}
+            {tab === 'review' && <Review />}
             {tab === 'stats' && <Stats stats={stats} totalToday={timer.totalToday} />}
           </div>
         </div>
