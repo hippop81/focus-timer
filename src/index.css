@@ -1403,3 +1403,49 @@ html, body {
   border-color: var(--green);
   color: var(--green);
 }
+
+.rv-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.rv-divider::before, .rv-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.rv-btn-block {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.rv-btn-block:hover {
+  border-color: var(--lime-dark);
+  color: var(--text);
+  background: var(--card-hover);
+}
+
+.rv-validation-errors {
+  margin: 8px 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--red-dim);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+.rv-validation-errors li {
+  color: var(--red);
+  font-size: 13px;
+  list-style: none;
+  padding: 2px 0;
+}

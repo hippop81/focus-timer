@@ -52,8 +52,8 @@ export function toBase64(file: File): Promise<string> {
 }
 
 export const OCR_SYSTEM_PROMPT = `画像から試験問題を抽出し、JSONのみ返してください。
-フォーマット：{"question":"問題文","choices":["選択肢1","選択肢2","選択肢3","選択肢4"],"answer":0,"explanation":"解説文"}
-answerは0始まりのインデックス。選択肢にア．イ．等のプレフィックスは含めないこと。JSONのみ返し他のテキストは含めないこと。
+フォーマット：{"question":"問題文","choices":["ア．選択肢1","イ．選択肢2","ウ．選択肢3","エ．選択肢4"],"answer":0,"explanation":"解説文"}
+answerは0始まりのインデックス。JSONのみ返し他のテキストは含めないこと。
 解説は問題文・正解をもとに試験対策として有用な内容を200文字以内で生成してください。`;
 
 export const EXPLAIN_SYSTEM_PROMPT = '資格試験の解説専門家です。200文字以内で簡潔に日本語で解説してください。';

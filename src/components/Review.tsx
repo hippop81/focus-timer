@@ -4,9 +4,29 @@ import { useReview } from '../hooks/useReview';
 import { getApiKey, saveApiKey, callClaude, toBase64, OCR_SYSTEM_PROMPT, EXPLAIN_SYSTEM_PROMPT } from '../lib/claude';
 
 const LABELS = ['ア', 'イ', 'ウ', 'エ'];
+const PREFIXED_EMPTY = ['ア．', 'イ．', 'ウ．', 'エ．'];
 
 type SubTab = 'quiz' | 'register' | 'stats';
-type RegisterMode = 'ocr' | 'manual';
+type RegisterPhase = 'input' | 'confirm';
+
+interface DraftCard {
+  label: string;
+  question: string;
+  choices: string[];
+  answer: number | null;
+  explanation: string;
+}
+
+function getValidationErrors(d: DraftCard): string[] {
+  const errors: string[] = [];
+  if (!d.label.trim()) errors.push('ラベルが未入力です');
+  if (!d.question.trim()) errors.push('問題文が未入力です');
+  d.choices.forEach((c, i) => {
+    if (!c.trim()) errors.push(`選択肢${LABELS[i]}が未入力です`);
+  });
+  if (d.answer === null || d.answer < 0 || d.answer > 3) errors.push('正解を選択してください');
+  return errors;
+}
 
 export function Review() {
   const { cards, getDueCards, answerCard, addCard } = useReview();
@@ -24,7 +44,7 @@ export function Review() {
   const quizInitRef = useRef(false);
 
   // ── Register state ──
-  const [registerMode, setRegisterMode] = useState<RegisterMode>('ocr');
+  const [registerPhase, setRegisterPhase] = useState<RegisterPhase>('input');
   const [labelInput, setLabelInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -33,12 +53,7 @@ export function Review() {
   const [registerLoading, setRegisterLoading] = useState(false);
   const [apiKey, setApiKeyState] = useState(getApiKey);
   const [showApiKey, setShowApiKey] = useState(false);
-
-  // Manual register state
-  const [manQuestion, setManQuestion] = useState('');
-  const [manChoices, setManChoices] = useState(['', '', '', '']);
-  const [manAnswer, setManAnswer] = useState(0);
-  const [manExplanation, setManExplanation] = useState('');
+  const [draftCard, setDraftCard] = useState<DraftCard | null>(null);
 
   // ── Stats state ──
   const [filterLabel, setFilterLabel] = useState('全て');
@@ -113,12 +128,16 @@ export function Review() {
     saveApiKey(key);
   };
 
-  const handleOcrRegister = async () => {
+  const handleOcrToConfirm = async () => {
     if (!labelInput.trim()) { setOcrMsg('ラベルを入力してください'); setOcrStatus('error'); return; }
     if (!selectedFile) { setOcrMsg('スクショを選択してください'); setOcrStatus('error'); return; }
 
     setRegisterLoading(true);
     setOcrStatus('loading'); setOcrMsg('OCR処理中...');
+
+    let parsed: Record<string, unknown> = {};
+    let ocrFailed = false;
+
     try {
       const b64 = await toBase64(selectedFile);
       const mt = selectedFile.type || 'image/jpeg';
@@ -129,40 +148,84 @@ export function Review() {
           { type: 'text', text: 'この試験問題をJSONで抽出・解説生成してください' },
         ]}],
       );
-      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-      addCard({
-        label: labelInput.trim(),
-        question: parsed.question || '問題文を取得できませんでした',
-        choices: parsed.choices || ['選択肢1', '選択肢2', '選択肢3', '選択肢4'],
-        answer: typeof parsed.answer === 'number' ? parsed.answer : 0,
-        explanation: parsed.explanation || '',
-      });
-      setOcrStatus('ok'); setOcrMsg(`登録完了！「${labelInput.trim()}」に追加しました`);
-      setLabelInput(''); setSelectedFile(null); setPreviewUrl(null);
-      quizInitRef.current = false;
+      try {
+        parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      } catch {
+        parsed = {};
+        ocrFailed = true;
+      }
     } catch {
-      setOcrStatus('error'); setOcrMsg('読み取り失敗。手動登録に切り替えてください。');
+      parsed = {};
+      ocrFailed = true;
     }
+
+    const choices = Array.isArray(parsed.choices) && parsed.choices.length === 4
+      ? (parsed.choices as string[])
+      : ['', '', '', ''];
+    const answer = typeof parsed.answer === 'number' && parsed.answer >= 0 && parsed.answer <= 3
+      ? parsed.answer
+      : null;
+
+    setDraftCard({
+      label: labelInput.trim(),
+      question: (parsed.question as string) ?? '',
+      choices,
+      answer,
+      explanation: (parsed.explanation as string) ?? '',
+    });
+    setRegisterPhase('confirm');
     setRegisterLoading(false);
+
+    if (ocrFailed) {
+      setOcrStatus('error');
+      setOcrMsg('OCR読み取りに失敗しました。手動で入力してください。');
+    } else {
+      setOcrStatus('ok');
+      setOcrMsg('読み取り完了。内容を確認してください。');
+    }
   };
 
-  const handleManualRegister = () => {
-    if (!labelInput.trim()) { setOcrMsg('ラベルを入力してください'); setOcrStatus('error'); return; }
-    if (!manQuestion.trim()) { setOcrMsg('問題文を入力してください'); setOcrStatus('error'); return; }
-    const filledChoices = manChoices.filter(c => c.trim());
-    if (filledChoices.length < 2) { setOcrMsg('選択肢を2つ以上入力してください'); setOcrStatus('error'); return; }
+  const handleManualToConfirm = () => {
+    setDraftCard({
+      label: labelInput.trim(),
+      question: '',
+      choices: [...PREFIXED_EMPTY],
+      answer: null,
+      explanation: '',
+    });
+    setRegisterPhase('confirm');
+    setOcrStatus(null);
+    setOcrMsg('');
+  };
+
+  const handleConfirmSave = () => {
+    if (!draftCard) return;
+    const errors = getValidationErrors(draftCard);
+    if (errors.length > 0) return;
 
     addCard({
-      label: labelInput.trim(),
-      question: manQuestion.trim(),
-      choices: manChoices.map(c => c.trim() || '(空欄)'),
-      answer: manAnswer,
-      explanation: manExplanation.trim(),
+      label: draftCard.label,
+      question: draftCard.question,
+      choices: draftCard.choices,
+      answer: draftCard.answer!,
+      explanation: draftCard.explanation,
     });
-    setOcrStatus('ok'); setOcrMsg(`登録完了！「${labelInput.trim()}」に追加しました`);
-    setManQuestion(''); setManChoices(['', '', '', '']); setManAnswer(0); setManExplanation('');
+
+    setRegisterPhase('input');
+    setDraftCard(null);
     setLabelInput('');
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setOcrStatus('ok');
+    setOcrMsg(`登録完了！「${draftCard.label}」に追加しました`);
     quizInitRef.current = false;
+  };
+
+  const handleConfirmDiscard = () => {
+    setRegisterPhase('input');
+    setDraftCard(null);
+    setOcrStatus(null);
+    setOcrMsg('');
   };
 
   // ── Stats data ──
@@ -176,13 +239,14 @@ export function Review() {
   const allLabels = Object.keys(labelMap);
   const filteredLabels = filterLabel === '全て' ? allLabels : allLabels.filter(l => l === filterLabel);
 
-  // ── Derived quiz state ──
+  // ── Derived state ──
   const currentCard = quizCards[quizIdx];
   const isDone = quizIdx >= quizCards.length;
   const isEmpty = quizCards.length === 0;
   const accuracy = quizIdx > 0 ? Math.round(correctCount / quizIdx * 100) : null;
   const doneAccuracy = quizCards.length > 0 ? Math.round(correctCount / quizCards.length * 100) : 0;
   const hasApiKey = apiKey.length > 0;
+  const confirmErrors = draftCard ? getValidationErrors(draftCard) : [];
 
   return (
     <div>
@@ -199,6 +263,7 @@ export function Review() {
             onClick={() => {
               setSubTab(t.key);
               if (t.key === 'quiz') resetQuiz();
+              if (t.key === 'register') { setRegisterPhase('input'); setDraftCard(null); }
             }}
           >
             {t.label}
@@ -262,7 +327,7 @@ export function Review() {
                     }
                     return (
                       <button key={i} className={cls} disabled={answered} onClick={() => handleAnswer(i)}>
-                        {LABELS[i]}．{ch}
+                        {ch}
                       </button>
                     );
                   })}
@@ -301,154 +366,172 @@ export function Review() {
       {/* ── REGISTER ── */}
       {subTab === 'register' && (
         <div className="rv-section">
-          {/* API Key */}
-          <button className="rv-apikey-toggle" onClick={() => setShowApiKey(p => !p)}>
-            <span>{hasApiKey ? '&#x1F511; APIキー設定済み' : '&#x1F511; APIキーを設定'}</span>
-            <span className={`rv-chevron ${showApiKey ? 'open' : ''}`}>&#x25BE;</span>
-          </button>
-          {showApiKey && (
-            <div className="rv-apikey-section">
-              <input
-                type="password"
-                className="rv-input"
-                placeholder="sk-ant-..."
-                value={apiKey}
-                onChange={e => handleSaveApiKey(e.target.value)}
-              />
-              <div className="rv-warning">
-                &#x26A0;&#xFE0F; APIキーはブラウザのローカルストレージに保存されます。自分専用の環境でのみ使用し、共有端末や公開サイトでの利用は避けてください。
-              </div>
-            </div>
-          )}
 
-          {/* Register mode toggle */}
-          <div className="rv-tabs" style={{ marginBottom: 12 }}>
-            <button
-              className={`rv-tab ${registerMode === 'ocr' ? 'active' : ''}`}
-              onClick={() => setRegisterMode('ocr')}
-            >
-              &#x2726; AI読取
-            </button>
-            <button
-              className={`rv-tab ${registerMode === 'manual' ? 'active' : ''}`}
-              onClick={() => setRegisterMode('manual')}
-            >
-              &#x270F;&#xFE0F; 手動入力
-            </button>
-          </div>
-
-          {/* Label (shared between modes) */}
-          <div className="rv-field">
-            <label className="rv-field-label">ラベル（自由記入）</label>
-            <input
-              type="text"
-              className="rv-input"
-              value={labelInput}
-              onChange={e => setLabelInput(e.target.value)}
-              placeholder="例: FE ネットワーク、宅建 権利関係"
-            />
-            <div className="rv-hint">科目・分野・何でもOK</div>
-          </div>
-
-          {/* ── OCR mode ── */}
-          {registerMode === 'ocr' && (
+          {/* ── Input phase ── */}
+          {registerPhase === 'input' && (
             <>
+              {/* API Key */}
+              <button className="rv-apikey-toggle" onClick={() => setShowApiKey(p => !p)}>
+                <span>{hasApiKey ? '&#x1F511; APIキー設定済み' : '&#x1F511; APIキーを設定'}</span>
+                <span className={`rv-chevron ${showApiKey ? 'open' : ''}`}>&#x25BE;</span>
+              </button>
+              {showApiKey && (
+                <div className="rv-apikey-section">
+                  <input
+                    type="password"
+                    className="rv-input"
+                    placeholder="sk-ant-..."
+                    value={apiKey}
+                    onChange={e => handleSaveApiKey(e.target.value)}
+                  />
+                  <div className="rv-warning">
+                    &#x26A0;&#xFE0F; APIキーはブラウザのローカルストレージに保存されます。自分専用の環境でのみ使用し、共有端末や公開サイトでの利用は避けてください。
+                  </div>
+                </div>
+              )}
+
+              {/* Label */}
+              <div className="rv-field">
+                <label className="rv-field-label">ラベル（自由記入）</label>
+                <input
+                  type="text"
+                  className="rv-input"
+                  value={labelInput}
+                  onChange={e => setLabelInput(e.target.value)}
+                  placeholder="例: FE ネットワーク、宅建 権利関係"
+                />
+                <div className="rv-hint">科目・分野・何でもOK</div>
+              </div>
+
+              {/* Upload */}
               <label className="rv-upload-area">
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
                 <div className="rv-upload-icon">&#x1F4F7;</div>
                 <div className="rv-upload-text">{selectedFile ? selectedFile.name : 'スクショを選択'}</div>
                 <div className="rv-upload-hint">過去問道場 · 参考書 · 何でもOK</div>
               </label>
-
               {previewUrl && <img className="rv-preview" src={previewUrl} alt="preview" />}
 
               {!hasApiKey && (
                 <div className="rv-warning" style={{ marginBottom: 12 }}>
-                  AI読取にはAPIキーが必要です。上の「APIキーを設定」から入力するか、手動入力モードをご利用ください。
+                  AI読取にはAPIキーが必要です。上の「APIキーを設定」から入力するか、手動入力をご利用ください。
                 </div>
               )}
+
+              {ocrStatus && (
+                <div className={`rv-ocr-status ${ocrStatus}`}>{ocrMsg}</div>
+              )}
+
+              <button
+                className="rv-register-btn"
+                onClick={handleOcrToConfirm}
+                disabled={registerLoading || !hasApiKey}
+              >
+                {registerLoading ? '読み取り中...' : '&#x2726; AIで読み取って確認'}
+              </button>
+
+              <div className="rv-divider">
+                <span>または</span>
+              </div>
+
+              <button className="rv-btn-secondary rv-btn-block" onClick={handleManualToConfirm}>
+                &#x270F;&#xFE0F; 手動で入力する
+              </button>
+
+              <div className="rv-schedule-info">
+                <strong>スケジュール：大量記憶法</strong><br />
+                1→2→4→7→11→15→19日後に復習<br />
+                3回連続正解で習得ルートに昇格
+              </div>
             </>
           )}
 
-          {/* ── Manual mode ── */}
-          {registerMode === 'manual' && (
+          {/* ── Confirm phase ── */}
+          {registerPhase === 'confirm' && draftCard && (
             <>
+              {ocrStatus && (
+                <div className={`rv-ocr-status ${ocrStatus}`}>{ocrMsg}</div>
+              )}
+
               <div className="rv-field">
-                <label className="rv-field-label">問題文</label>
-                <textarea
-                  className="rv-input rv-textarea"
-                  value={manQuestion}
-                  onChange={e => setManQuestion(e.target.value)}
-                  placeholder="問題文を入力..."
-                  rows={3}
+                <label className="rv-field-label">ラベル</label>
+                <input
+                  className="rv-input"
+                  value={draftCard.label}
+                  onChange={e => setDraftCard({ ...draftCard, label: e.target.value })}
+                  placeholder="例: FE ネットワーク"
                 />
               </div>
 
               <div className="rv-field">
-                <label className="rv-field-label">選択肢</label>
-                {manChoices.map((ch, i) => (
+                <label className="rv-field-label">問題文</label>
+                <textarea
+                  className="rv-input rv-textarea"
+                  rows={3}
+                  value={draftCard.question}
+                  onChange={e => setDraftCard({ ...draftCard, question: e.target.value })}
+                  placeholder="問題文を入力..."
+                />
+              </div>
+
+              <div className="rv-field">
+                <label className="rv-field-label">選択肢（左のボタンで正解を指定）</label>
+                {draftCard.choices.map((ch, i) => (
                   <div key={i} className="rv-manual-choice-row">
                     <button
-                      className={`rv-manual-answer-btn ${manAnswer === i ? 'selected' : ''}`}
-                      onClick={() => setManAnswer(i)}
+                      className={`rv-manual-answer-btn ${draftCard.answer === i ? 'selected' : ''}`}
+                      onClick={() => setDraftCard({ ...draftCard, answer: i })}
                       title="正解に設定"
                     >
                       {LABELS[i]}
                     </button>
                     <input
-                      type="text"
                       className="rv-input"
                       value={ch}
                       onChange={e => {
-                        const next = [...manChoices];
+                        const next = [...draftCard.choices];
                         next[i] = e.target.value;
-                        setManChoices(next);
+                        setDraftCard({ ...draftCard, choices: next });
                       }}
-                      placeholder={`選択肢${LABELS[i]}`}
+                      placeholder={`${LABELS[i]}．選択肢を入力`}
                     />
                   </div>
                 ))}
-                <div className="rv-hint">左のボタンをクリックで正解を指定（緑 = 正解）</div>
+                <div className="rv-hint">緑 = 正解。プレフィックス（ア．等）込みで編集可能です</div>
               </div>
 
               <div className="rv-field">
                 <label className="rv-field-label">解説（任意）</label>
                 <textarea
                   className="rv-input rv-textarea"
-                  value={manExplanation}
-                  onChange={e => setManExplanation(e.target.value)}
-                  placeholder="解説を入力..."
                   rows={2}
+                  value={draftCard.explanation}
+                  onChange={e => setDraftCard({ ...draftCard, explanation: e.target.value })}
+                  placeholder="解説を入力..."
                 />
               </div>
+
+              {confirmErrors.length > 0 && (
+                <div className="rv-validation-errors">
+                  {confirmErrors.map((err, i) => <div key={i}>{err}</div>)}
+                </div>
+              )}
+
+              <button
+                className="rv-register-btn"
+                onClick={handleConfirmSave}
+                disabled={confirmErrors.length > 0}
+              >
+                保存
+              </button>
+              <button
+                className="rv-btn-secondary rv-btn-block"
+                onClick={handleConfirmDiscard}
+                style={{ marginTop: 8 }}
+              >
+                破棄して登録に戻る
+              </button>
             </>
-          )}
-
-          <div className="rv-schedule-info">
-            <strong>スケジュール：大量記憶法</strong><br />
-            1→2→4→7→11→15→19日後に復習<br />
-            3回連続正解で習得ルートに昇格
-          </div>
-
-          {ocrStatus && (
-            <div className={`rv-ocr-status ${ocrStatus}`}>{ocrMsg}</div>
-          )}
-
-          {registerMode === 'ocr' ? (
-            <button
-              className="rv-register-btn"
-              onClick={handleOcrRegister}
-              disabled={registerLoading || !hasApiKey}
-            >
-              {registerLoading ? '読み取り中...' : '&#x2726; AIで読み取って登録'}
-            </button>
-          ) : (
-            <button
-              className="rv-register-btn"
-              onClick={handleManualRegister}
-            >
-              登録する
-            </button>
           )}
         </div>
       )}
