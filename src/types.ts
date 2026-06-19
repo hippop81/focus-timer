@@ -64,6 +64,19 @@ export const NASA_SOUNDS: NasaSoundDef[] = [
   },
 ];
 
+export interface ReviewCard {
+  id: number;
+  label: string;
+  question: string;
+  choices: string[];
+  answer: number;
+  explanation: string;
+  consecutiveCorrect: number;
+  route: 'default' | 'mastering' | 'mastered';
+  intervalIdx: number;
+  nextReview: number;
+}
+
 export interface Task {
   id: string;
   text: string;
