@@ -1351,3 +1351,55 @@ html, body {
 .rv-label-bar.high { background: var(--lime); }
 .rv-label-bar.mid { background: #fb923c; }
 .rv-label-bar.low { background: var(--red); }
+
+/* ── Warning ── */
+.rv-warning {
+  font-size: 11px;
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.1);
+  border: 1px solid rgba(251, 146, 60, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ── Manual register ── */
+.rv-textarea {
+  resize: vertical;
+  min-height: 40px;
+  line-height: 1.6;
+}
+
+.rv-manual-choice-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.rv-manual-answer-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-faint);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.rv-manual-answer-btn:hover { border-color: var(--green); color: var(--green); }
+
+.rv-manual-answer-btn.selected {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}

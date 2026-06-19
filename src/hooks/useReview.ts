@@ -4,7 +4,6 @@ import { ReviewCard } from '../types';
 const INTERVALS_DEFAULT  = [1, 2, 4, 7, 11, 15, 19, 26, 35];
 const INTERVALS_MASTERED = [7, 14, 30, 60, 90];
 const STORAGE_KEY = 'focus_review_cards';
-const API_KEY_KEY = 'focus_api_key';
 
 const SAMPLE_CARDS: ReviewCard[] = [
   {
@@ -82,14 +81,6 @@ function loadCards(): ReviewCard[] {
 
 function saveCards(cards: ReviewCard[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
-}
-
-export function getApiKey(): string {
-  return localStorage.getItem(API_KEY_KEY) || '';
-}
-
-export function saveApiKey(key: string) {
-  localStorage.setItem(API_KEY_KEY, key);
 }
 
 export function useReview() {
