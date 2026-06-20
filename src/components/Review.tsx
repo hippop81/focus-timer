@@ -287,7 +287,7 @@ export function Review() {
 
           {isEmpty && (
             <div className="rv-empty">
-              <div className="rv-empty-icon">&#x1F4DA;</div>
+              <div className="rv-empty-icon">📚</div>
               今日やる問題はありません
               <div className="rv-empty-sub">「登録」タブから問題を追加してください</div>
               <button className="rv-btn-secondary" onClick={() => setSubTab('register')}>問題を登録する</button>
@@ -296,7 +296,7 @@ export function Review() {
 
           {!isEmpty && isDone && (
             <div className="rv-empty">
-              <div className="rv-empty-icon">&#x2705;</div>
+              <div className="rv-empty-icon">✅</div>
               <div className="rv-done-title">今日の分、完了！</div>
               <div className="rv-empty-sub">
                 正解率 {doneAccuracy}%（{correctCount}/{quizCards.length}）
@@ -337,7 +337,7 @@ export function Review() {
                   <div className="rv-explain-section">
                     <button className="rv-explain-toggle" onClick={() => setExplainOpen(p => !p)}>
                       <span>解説を見る</span>
-                      <span className={`rv-chevron ${explainOpen ? 'open' : ''}`}>&#x25BE;</span>
+                      <span className={`rv-chevron ${explainOpen ? 'open' : ''}`}>▾</span>
                     </button>
                     {explainOpen && (
                       <div className="rv-explain-content">
@@ -346,7 +346,7 @@ export function Review() {
                         {aiLoading && <div className="rv-explain-loading">AIが解説生成中...</div>}
                         {!aiLoading && (
                           <button className="rv-ai-btn" onClick={handleAiExplain}>
-                            &#x2726; AIにもっと詳しく聞く
+                            ✦ AIにもっと詳しく聞く
                           </button>
                         )}
                       </div>
@@ -372,8 +372,8 @@ export function Review() {
             <>
               {/* API Key */}
               <button className="rv-apikey-toggle" onClick={() => setShowApiKey(p => !p)}>
-                <span>{hasApiKey ? '&#x1F511; APIキー設定済み' : '&#x1F511; APIキーを設定'}</span>
-                <span className={`rv-chevron ${showApiKey ? 'open' : ''}`}>&#x25BE;</span>
+                <span>{hasApiKey ? '🔑 APIキー設定済み' : '🔑 APIキーを設定'}</span>
+                <span className={`rv-chevron ${showApiKey ? 'open' : ''}`}>▾</span>
               </button>
               {showApiKey && (
                 <div className="rv-apikey-section">
@@ -385,7 +385,7 @@ export function Review() {
                     onChange={e => handleSaveApiKey(e.target.value)}
                   />
                   <div className="rv-warning">
-                    &#x26A0;&#xFE0F; APIキーはブラウザのローカルストレージに保存されます。自分専用の環境でのみ使用し、共有端末や公開サイトでの利用は避けてください。
+                    ⚠️ APIキーはブラウザのローカルストレージに保存されます。自分専用の環境でのみ使用し、共有端末や公開サイトでの利用は避けてください。
                   </div>
                 </div>
               )}
@@ -406,7 +406,7 @@ export function Review() {
               {/* Upload */}
               <label className="rv-upload-area">
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
-                <div className="rv-upload-icon">&#x1F4F7;</div>
+                <div className="rv-upload-icon">📷</div>
                 <div className="rv-upload-text">{selectedFile ? selectedFile.name : 'スクショを選択'}</div>
                 <div className="rv-upload-hint">過去問道場 · 参考書 · 何でもOK</div>
               </label>
@@ -427,7 +427,7 @@ export function Review() {
                 onClick={handleOcrToConfirm}
                 disabled={registerLoading || !hasApiKey}
               >
-                {registerLoading ? '読み取り中...' : '&#x2726; AIで読み取って確認'}
+                {registerLoading ? '読み取り中...' : '✦ AIで読み取って確認'}
               </button>
 
               <div className="rv-divider">
@@ -435,7 +435,7 @@ export function Review() {
               </div>
 
               <button className="rv-btn-secondary rv-btn-block" onClick={handleManualToConfirm}>
-                &#x270F;&#xFE0F; 手動で入力する
+                ✏️ 手動で入力する
               </button>
 
               <div className="rv-schedule-info">
