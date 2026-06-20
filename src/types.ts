@@ -1,6 +1,6 @@
 export type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
-export type SoundType = 'none' | 'rain' | 'forest' | 'ocean' | 'cafe' | 'whitenoise' | 'brownnoise' | 'deepfocus';
+export type SoundType = 'none' | 'rain' | 'forest' | 'ocean' | 'cafe' | 'whitenoise' | 'brownnoise' | 'pinknoise' | 'deepfocus' | 'airport' | 'airplane' | 'localtrain' | 'ferrydeck' | 'river';
 
 export type NasaSoundId = 'mars-wind' | 'insight' | 'jupiter' | 'saturn' | 'voyager';
 export type NasaPlayState = 'idle' | 'loading' | 'playing' | 'simulated' | 'error';

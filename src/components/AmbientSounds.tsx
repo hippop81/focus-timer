@@ -7,9 +7,15 @@ const AMBIENT: AmbientDef[] = [
   { id: 'rain',       icon: '🌧️',  label: '雨' },
   { id: 'forest',     icon: '🌿',  label: '森' },
   { id: 'ocean',      icon: '🌊',  label: '海' },
+  { id: 'river',      icon: '🏞️',  label: '川' },
   { id: 'cafe',       icon: '☕',  label: 'カフェ' },
+  { id: 'airport',    icon: '🛫',  label: '空港' },
+  { id: 'airplane',   icon: '✈️',  label: '機内' },
+  { id: 'localtrain', icon: '🚃',  label: '電車' },
+  { id: 'ferrydeck',  icon: '⛴️',  label: 'フェリー' },
   { id: 'whitenoise', icon: '〰️',  label: 'ホワイト' },
   { id: 'brownnoise', icon: '🟤',  label: 'ブラウン' },
+  { id: 'pinknoise',  icon: '🩷',  label: 'ピンク' },
   { id: 'deepfocus',  icon: '🎵',  label: 'ドローン' },
 ];
 

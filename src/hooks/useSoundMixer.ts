@@ -3,7 +3,7 @@ import { NasaSoundId, NasaPlayState, NASA_SOUNDS } from '../types';
 
 // ═══ Channel types ═══════════════════════════════════════════════
 
-export type AmbientId = 'rain' | 'forest' | 'ocean' | 'cafe' | 'whitenoise' | 'brownnoise' | 'deepfocus';
+export type AmbientId = 'rain' | 'forest' | 'ocean' | 'cafe' | 'whitenoise' | 'brownnoise' | 'pinknoise' | 'deepfocus' | 'airport' | 'airplane' | 'localtrain' | 'ferrydeck' | 'river';
 export type SoundChannelId = AmbientId | NasaSoundId;
 
 const NASA_IDS: readonly string[] = ['mars-wind', 'insight', 'saturn', 'jupiter', 'voyager'];
@@ -49,9 +49,33 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'night-train', icon: '🚂', label: 'Night Train',
     channels: [
-      { id: 'brownnoise', volume: 0.5 },
+      { id: 'localtrain', volume: 0.5 },
+      { id: 'brownnoise', volume: 0.25 },
+      { id: 'rain', volume: 0.1 },
+    ],
+  },
+  {
+    id: 'airport-focus', icon: '✈️', label: 'Airport Focus',
+    channels: [
+      { id: 'airport', volume: 0.5 },
+      { id: 'pinknoise', volume: 0.15 },
+      { id: 'cafe', volume: 0.1 },
+    ],
+  },
+  {
+    id: 'ferry-study', icon: '⛴️', label: 'Ferry Study',
+    channels: [
+      { id: 'ferrydeck', volume: 0.5 },
+      { id: 'ocean', volume: 0.15 },
+      { id: 'brownnoise', volume: 0.1 },
+    ],
+  },
+  {
+    id: 'late-study', icon: '🌙', label: 'Late Study',
+    channels: [
+      { id: 'brownnoise', volume: 0.4 },
       { id: 'deepfocus', volume: 0.2 },
-      { id: 'rain', volume: 0.15 },
+      { id: 'river', volume: 0.15 },
     ],
   },
 ];
@@ -207,6 +231,152 @@ function setupDeepFocus(ctx: AudioContext, out: GainNode): SynthResult {
   return { stoppable, misc };
 }
 
+function setupPinkNoise(ctx: AudioContext, out: GainNode): SynthResult {
+  const buf = makeNoise(ctx, 'pink');
+  const src = loopSrc(ctx, buf); const f = lpf(ctx, 14000); const g = gn(ctx, 0.2);
+  src.connect(f); f.connect(g); g.connect(out); src.start();
+  return { stoppable: [src], misc: [f, g] };
+}
+
+function setupAirport(ctx: AudioContext, out: GainNode): SynthResult {
+  const stoppable: Stoppable[] = []; const misc: AudioNode[] = [];
+  // HVAC / terminal rumble
+  const brown = makeNoise(ctx, 'brown');
+  const src1 = loopSrc(ctx, brown); const f1 = lpf(ctx, 300, 0.4); const g1 = gn(ctx, 0.2);
+  src1.connect(f1); f1.connect(g1); g1.connect(out); src1.start();
+  stoppable.push(src1); misc.push(f1, g1);
+  // Crowd murmur: band-passed pink noise with slow modulation
+  const pink = makeNoise(ctx, 'pink');
+  const src2 = loopSrc(ctx, pink); const f2 = bpf(ctx, 700, 0.5); const g2 = gn(ctx, 0.1);
+  const { o: l1, g: lg1 } = lfo(ctx, 0.12, 0.05, g2.gain);
+  src2.connect(f2); f2.connect(g2); g2.connect(out); src2.start();
+  stoppable.push(src2); misc.push(f2, g2, l1, lg1);
+  // PA announcement ambience: filtered mid-high with slow swell
+  const src3 = loopSrc(ctx, pink); const f3 = bpf(ctx, 2200, 1.5); const g3 = gn(ctx, 0.015);
+  const { o: l2, g: lg2 } = lfo(ctx, 0.04, 0.012, g3.gain);
+  src3.connect(f3); f3.connect(g3); g3.connect(out); src3.start();
+  stoppable.push(src3); misc.push(f3, g3, l2, lg2);
+  // High-frequency air / echo
+  const white = makeNoise(ctx, 'white');
+  const src4 = loopSrc(ctx, white); const f4 = bpf(ctx, 5000, 2); const g4 = gn(ctx, 0.008);
+  src4.connect(f4); f4.connect(g4); g4.connect(out); src4.start();
+  stoppable.push(src4); misc.push(f4, g4);
+  return { stoppable, misc };
+}
+
+function setupAirplane(ctx: AudioContext, out: GainNode): SynthResult {
+  const stoppable: Stoppable[] = []; const misc: AudioNode[] = [];
+  // Engine drone: heavy brown noise low-pass
+  const brown = makeNoise(ctx, 'brown', 6);
+  const src1 = loopSrc(ctx, brown); const f1 = lpf(ctx, 200, 0.5); const g1 = gn(ctx, 0.3);
+  const { o: l1, g: lg1 } = lfo(ctx, 0.03, 0.04, g1.gain);
+  src1.connect(f1); f1.connect(g1); g1.connect(out); src1.start();
+  stoppable.push(src1); misc.push(f1, g1, l1, lg1);
+  // Cabin air circulation: mid-range band-pass
+  const white = makeNoise(ctx, 'white');
+  const src2 = loopSrc(ctx, white); const f2 = bpf(ctx, 1400, 0.8); const g2 = gn(ctx, 0.06);
+  src2.connect(f2); f2.connect(g2); g2.connect(out); src2.start();
+  stoppable.push(src2); misc.push(f2, g2);
+  // Engine vibration: very low sine
+  const o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = 45;
+  const g3 = gn(ctx, 0.08);
+  const { o: l2, g: lg2 } = lfo(ctx, 0.02, 3, o1.frequency);
+  o1.connect(g3); g3.connect(out); o1.start();
+  stoppable.push(o1); misc.push(g3, l2, lg2);
+  // Subtle high hiss
+  const src3 = loopSrc(ctx, white); const f3 = hpf(ctx, 6000); const g4 = gn(ctx, 0.01);
+  src3.connect(f3); f3.connect(g4); g4.connect(out); src3.start();
+  stoppable.push(src3); misc.push(f3, g4);
+  return { stoppable, misc };
+}
+
+function setupLocalTrain(ctx: AudioContext, out: GainNode): SynthResult {
+  const stoppable: Stoppable[] = []; const misc: AudioNode[] = [];
+  // Rail clatter: rhythmic amplitude modulation on band-passed noise
+  const brown = makeNoise(ctx, 'brown');
+  const src1 = loopSrc(ctx, brown); const f1 = bpf(ctx, 600, 0.6); const g1 = gn(ctx, 0.14);
+  // ~3.2 Hz modulation for rail joint rhythm (approx every 0.3s)
+  const { o: l1, g: lg1 } = lfo(ctx, 3.2, 0.1, g1.gain);
+  src1.connect(f1); f1.connect(g1); g1.connect(out); src1.start();
+  stoppable.push(src1); misc.push(f1, g1, l1, lg1);
+  // Engine/motor hum
+  const o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = 55;
+  const g2 = gn(ctx, 0.1);
+  const { o: l2, g: lg2 } = lfo(ctx, 0.05, 4, o1.frequency);
+  o1.connect(g2); g2.connect(out); o1.start();
+  stoppable.push(o1); misc.push(g2, l2, lg2);
+  // Wheel-on-rail high-frequency
+  const white = makeNoise(ctx, 'white');
+  const src2 = loopSrc(ctx, white); const f2 = bpf(ctx, 3500, 1.5); const g3 = gn(ctx, 0.02);
+  const { o: l3, g: lg3 } = lfo(ctx, 3.2, 0.015, g3.gain);
+  src2.connect(f2); f2.connect(g3); g3.connect(out); src2.start();
+  stoppable.push(src2); misc.push(f2, g3, l3, lg3);
+  // Low rumble
+  const src3 = loopSrc(ctx, brown); const f3 = lpf(ctx, 120); const g4 = gn(ctx, 0.12);
+  src3.connect(f3); f3.connect(g4); g4.connect(out); src3.start();
+  stoppable.push(src3); misc.push(f3, g4);
+  return { stoppable, misc };
+}
+
+function setupFerryDeck(ctx: AudioContext, out: GainNode): SynthResult {
+  const stoppable: Stoppable[] = []; const misc: AudioNode[] = [];
+  // Waves against hull: slow-modulated brown noise
+  const brown = makeNoise(ctx, 'brown', 6);
+  const src1 = loopSrc(ctx, brown); const f1 = lpf(ctx, 400, 0.4); const g1 = gn(ctx, 0.18);
+  const { o: l1, g: lg1 } = lfo(ctx, 0.09, 0.12, g1.gain);
+  src1.connect(f1); f1.connect(g1); g1.connect(out); src1.start();
+  stoppable.push(src1); misc.push(f1, g1, l1, lg1);
+  // Deck wind: high-pass filtered noise with modulation
+  const white = makeNoise(ctx, 'white');
+  const src2 = loopSrc(ctx, white); const f2 = hpf(ctx, 800); const f2b = lpf(ctx, 4000);
+  const g2 = gn(ctx, 0.06);
+  const { o: l2, g: lg2 } = lfo(ctx, 0.07, 0.04, g2.gain);
+  src2.connect(f2); f2.connect(f2b); f2b.connect(g2); g2.connect(out); src2.start();
+  stoppable.push(src2); misc.push(f2, f2b, g2, l2, lg2);
+  // Engine throb: low oscillators
+  const o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = 38;
+  const g3 = gn(ctx, 0.1);
+  const { o: l3, g: lg3 } = lfo(ctx, 0.04, 2, o1.frequency);
+  o1.connect(g3); g3.connect(out); o1.start();
+  stoppable.push(o1); misc.push(g3, l3, lg3);
+  const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = 76;
+  const g4 = gn(ctx, 0.04);
+  o2.connect(g4); g4.connect(out); o2.start();
+  stoppable.push(o2); misc.push(g4);
+  // Spray / splash: very subtle high band-pass
+  const src3 = loopSrc(ctx, white); const f3 = bpf(ctx, 6000, 2); const g5 = gn(ctx, 0.008);
+  const { o: l4, g: lg4 } = lfo(ctx, 0.15, 0.006, g5.gain);
+  src3.connect(f3); f3.connect(g5); g5.connect(out); src3.start();
+  stoppable.push(src3); misc.push(f3, g5, l4, lg4);
+  return { stoppable, misc };
+}
+
+function setupRiver(ctx: AudioContext, out: GainNode): SynthResult {
+  const stoppable: Stoppable[] = []; const misc: AudioNode[] = [];
+  // Water body: brown noise base
+  const brown = makeNoise(ctx, 'brown');
+  const src1 = loopSrc(ctx, brown); const f1 = lpf(ctx, 600, 0.4); const g1 = gn(ctx, 0.15);
+  const { o: l1, g: lg1 } = lfo(ctx, 0.06, 0.06, g1.gain);
+  src1.connect(f1); f1.connect(g1); g1.connect(out); src1.start();
+  stoppable.push(src1); misc.push(f1, g1, l1, lg1);
+  // Babbling: multiple band-passed white noise layers
+  const white = makeNoise(ctx, 'white');
+  const bands = [1200, 2400, 4800];
+  bands.forEach((freq, i) => {
+    const src = loopSrc(ctx, white); const f = bpf(ctx, freq, 1.2); const g = gn(ctx, 0.025 - i * 0.005);
+    const { o: l, g: lg } = lfo(ctx, 0.2 + i * 0.15, 0.015, g.gain);
+    src.connect(f); f.connect(g); g.connect(out); src.start();
+    stoppable.push(src); misc.push(f, g, l, lg);
+  });
+  // Gentle mid-flow
+  const pink = makeNoise(ctx, 'pink');
+  const src2 = loopSrc(ctx, pink); const f2 = bpf(ctx, 800, 0.6); const g2 = gn(ctx, 0.06);
+  const { o: l2, g: lg2 } = lfo(ctx, 0.1, 0.03, g2.gain);
+  src2.connect(f2); f2.connect(g2); g2.connect(out); src2.start();
+  stoppable.push(src2); misc.push(f2, g2, l2, lg2);
+  return { stoppable, misc };
+}
+
 function startAmbientSynth(id: AmbientId, ctx: AudioContext, out: GainNode): SynthResult {
   switch (id) {
     case 'rain': return setupRain(ctx, out);
@@ -215,7 +385,13 @@ function startAmbientSynth(id: AmbientId, ctx: AudioContext, out: GainNode): Syn
     case 'cafe': return setupCafe(ctx, out);
     case 'whitenoise': return setupWhiteNoise(ctx, out);
     case 'brownnoise': return setupBrownNoise(ctx, out);
+    case 'pinknoise': return setupPinkNoise(ctx, out);
     case 'deepfocus': return setupDeepFocus(ctx, out);
+    case 'airport': return setupAirport(ctx, out);
+    case 'airplane': return setupAirplane(ctx, out);
+    case 'localtrain': return setupLocalTrain(ctx, out);
+    case 'ferrydeck': return setupFerryDeck(ctx, out);
+    case 'river': return setupRiver(ctx, out);
   }
 }
 
