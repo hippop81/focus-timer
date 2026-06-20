@@ -855,21 +855,22 @@ html, body {
 
 /* ─── Sound Mixer ─── */
 
+/* Presets: compact wrapping pills */
 .preset-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: 8px;
 }
 
 .preset-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 6px 11px;
   background: var(--card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: var(--text-muted);
@@ -886,64 +887,86 @@ html, body {
   color: var(--accent);
 }
 
-.preset-icon { font-size: 16px; line-height: 1; }
+.preset-icon { font-size: 15px; line-height: 1; }
 .preset-name { font-size: 12px; }
 
 .mix-channel-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
+/* One-line card per source: [icon + name] [slider] [%] */
 .mix-channel {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-}
-
-.mix-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 110px;
-  padding: 6px 10px;
+  gap: 12px;
+  padding: 8px 12px;
   background: var(--card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
+  transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+/* Inactive sources: subdued */
+.mix-channel:not(.active) { opacity: 0.5; }
+.mix-channel:not(.active):hover { opacity: 0.85; background: var(--card-hover); }
+
+/* Active sources: visually emphasized */
+.mix-channel.active {
+  background: var(--accent-dim);
+  border-color: rgba(157, 127, 244, 0.3);
+}
+
+/* Active but at 0%: present yet understated */
+.mix-channel.zero {
+  background: var(--card);
+  border-color: var(--border);
+  opacity: 0.7;
+}
+
+/* Left: icon + name (also the on/off toggle) */
+.mix-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 116px;
+  flex-shrink: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
   color: var(--text-muted);
   font-family: var(--font);
   font-size: 12px;
-  position: relative;
+  text-align: left;
+  overflow: hidden;
 }
 
-.mix-toggle:hover { background: var(--card-hover); color: var(--text); border-color: var(--border); }
+.mix-toggle:hover { color: var(--text); }
+.mix-toggle.loading { cursor: wait; }
+.mix-channel.active .mix-toggle,
+.mix-toggle.on { color: var(--accent); }
 
-.mix-toggle.on {
-  background: var(--accent-dim);
-  border-color: rgba(157, 127, 244, 0.3);
-  color: var(--accent);
+.mix-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.mix-label {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mix-toggle.loading { opacity: 0.7; cursor: wait; }
+.mix-desc { display: none; }
 
-.mix-icon { font-size: 14px; line-height: 1; flex-shrink: 0; }
-.mix-label { font-size: 12px; font-weight: 500; white-space: nowrap; }
-
-.mix-desc {
-  display: none;
-}
-
+/* State badge (NASA): inline pill */
 .mix-state {
-  position: absolute;
-  top: 2px;
-  right: 3px;
-  font-size: 7px;
+  flex-shrink: 0;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 3px;
   text-transform: uppercase;
 }
@@ -952,18 +975,20 @@ html, body {
 .mix-state.state-sim { background: rgba(157, 127, 244, 0.2); color: var(--accent); border: 1px solid rgba(157, 127, 244, 0.3); }
 .mix-state.state-load { background: rgba(251, 146, 60, 0.2); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.3); animation: pulse 1s ease infinite; }
 
+/* Center: volume slider */
 .mix-vol-wrap {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 6px;
+  min-width: 0;
 }
 
 .mix-vol-slider {
   flex: 1;
+  min-width: 0;
   -webkit-appearance: none;
   appearance: none;
-  height: 3px;
+  height: 4px;
   border-radius: 2px;
   background: var(--border);
   outline: none;
@@ -975,8 +1000,8 @@ html, body {
 
 .mix-vol-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 6px var(--accent-glow);
@@ -987,15 +1012,18 @@ html, body {
 .mix-vol-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
 .mix-vol-slider:disabled::-webkit-slider-thumb { background: var(--text-faint); box-shadow: none; }
 
+/* Right: volume % */
 .mix-vol-val {
+  flex-shrink: 0;
   font-size: 11px;
   color: var(--text-faint);
   font-family: var(--font-mono);
-  min-width: 22px;
+  min-width: 38px;
   text-align: right;
 }
 
-.mix-channel.active .mix-vol-val { color: var(--text-muted); }
+.mix-channel.active .mix-vol-val { color: var(--accent); }
+.mix-channel.zero .mix-vol-val { color: var(--text-muted); }
 
 .mix-clear-btn {
   width: 100%;
@@ -1012,6 +1040,13 @@ html, body {
 }
 
 .mix-clear-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+
+/* Compact the source cards on small / mobile screens */
+@media (max-width: 480px) {
+  .mix-channel { gap: 8px; padding: 8px 10px; }
+  .mix-toggle { width: 92px; gap: 6px; }
+  .mix-vol-val { min-width: 34px; }
+}
 
 /* ─── Notification ─── */
 .notif {

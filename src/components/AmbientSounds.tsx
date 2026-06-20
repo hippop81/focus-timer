@@ -49,8 +49,10 @@ function ChannelRow({ icon, label, info, desc, nasaState, onToggle, onVolume }: 
   const isLoading = nasaState === 'loading';
   const stateLabel = nasaState && nasaState !== 'idle' ? STATE_LABEL[nasaState] : '';
 
+  const isZero = active && vol === 0;
+
   return (
-    <div className={`mix-channel ${active ? 'active' : ''}`}>
+    <div className={`mix-channel ${active ? 'active' : ''} ${isZero ? 'zero' : ''}`}>
       <button
         className={`mix-toggle ${active ? 'on' : ''} ${isLoading ? 'loading' : ''}`}
         onClick={onToggle}
@@ -60,14 +62,14 @@ function ChannelRow({ icon, label, info, desc, nasaState, onToggle, onVolume }: 
         <span className="mix-icon">{icon}</span>
         <span className="mix-label">{label}</span>
         {desc && <span className="mix-desc">{desc}</span>}
-        {stateLabel && (
-          <span className={`mix-state ${
-            nasaState === 'playing' ? 'state-real' :
-            nasaState === 'simulated' ? 'state-sim' :
-            nasaState === 'loading' ? 'state-load' : ''
-          }`}>{stateLabel}</span>
-        )}
       </button>
+      {stateLabel && (
+        <span className={`mix-state ${
+          nasaState === 'playing' ? 'state-real' :
+          nasaState === 'simulated' ? 'state-sim' :
+          nasaState === 'loading' ? 'state-load' : ''
+        }`}>{stateLabel}</span>
+      )}
       <div className="mix-vol-wrap">
         <input
           type="range"
@@ -77,8 +79,8 @@ function ChannelRow({ icon, label, info, desc, nasaState, onToggle, onVolume }: 
           onChange={e => onVolume(Number(e.target.value) / 100)}
           disabled={!active}
         />
-        <span className="mix-vol-val">{active ? Math.round(vol * 100) : '–'}</span>
       </div>
+      <span className="mix-vol-val">{active ? `${Math.round(vol * 100)}%` : '–'}</span>
     </div>
   );
 }
