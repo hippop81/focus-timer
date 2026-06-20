@@ -5,9 +5,8 @@ import { AmbientSounds } from './components/AmbientSounds';
 import { Review } from './components/Review';
 import { Stats } from './components/Stats';
 import { useTimer, useStats } from './hooks/useTimer';
-import { useAudio } from './hooks/useAudio';
-import { useNasaAudio } from './hooks/useNasaAudio';
-import { TimerMode, Settings, DEFAULT_SETTINGS, SoundType, NasaSoundId } from './types';
+import { useSoundMixer } from './hooks/useSoundMixer';
+import { TimerMode, Settings, DEFAULT_SETTINGS } from './types';
 
 type Tab = 'tasks' | 'sounds' | 'review' | 'stats';
 
@@ -26,8 +25,7 @@ export default function App() {
 
   const timer = useTimer(settings);
   const { stats, refresh, recordTaskDone } = useStats();
-  const audio = useAudio();
-  const nasa = useNasaAudio();
+  const mixer = useSoundMixer();
 
   // request notification permission on first interaction
   useEffect(() => {
@@ -63,25 +61,7 @@ export default function App() {
     showNotif('✓ タスク完了！');
   }, [recordTaskDone, showNotif]);
 
-  const handleSoundPlay = useCallback((type: SoundType) => {
-    audio.play(type);
-  }, [audio]);
-
-  const handleNasaPlay = useCallback((id: NasaSoundId) => {
-    const labels: Record<NasaSoundId, string> = {
-      'mars-wind': '火星の風',
-      'insight': 'InSight 地震計',
-      'saturn': '土星の電波',
-      'jupiter': '木星電磁波',
-      'voyager': '恒星間空間',
-    };
-    nasa.play(id);
-    showNotif(`🚀 ${labels[id]} を読み込んでいます...`);
-  }, [nasa, showNotif]);
-
-  const handleNasaStop = useCallback(() => {
-    nasa.stop();
-  }, [nasa]);
+  // sound mixer callbacks are passed directly via props
 
   const openSettings = () => {
     setDraft({ ...settings });
@@ -218,12 +198,15 @@ export default function App() {
             {tab === 'tasks' && <TaskManager onTaskDone={handleTaskDone} />}
             {tab === 'sounds' && (
               <AmbientSounds
-                onAmbientPlay={handleSoundPlay}
-                onNasaPlay={handleNasaPlay}
-                onNasaStop={handleNasaStop}
-                onVolume={(v) => { audio.setVolume(v); nasa.setVolume(v); }}
-                nasaActiveId={nasa.activeId}
-                nasaPlayState={nasa.playState}
+                channels={mixer.channels}
+                activePreset={mixer.activePreset}
+                masterVolume={mixer.masterVolume}
+                hasActive={mixer.hasActive}
+                onToggle={mixer.toggle}
+                onChannelVolume={mixer.setChannelVolume}
+                onMasterVolume={mixer.setMasterVolume}
+                onPreset={mixer.applyPreset}
+                onClearAll={mixer.clearAll}
               />
             )}
             {tab === 'review' && <Review />}
